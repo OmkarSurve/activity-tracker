@@ -23,6 +23,9 @@ init_notes_table()
 if "selected_activity_name" not in st.session_state:
     st.session_state.selected_activity_name = ""
 
+if "last_end_time" not in st.session_state:
+    st.session_state.last_end_time = ""
+
 if "selected_activity_type" not in st.session_state:
     st.session_state.selected_activity_type = "Education"
 
@@ -118,7 +121,10 @@ with tab1:
                 index=default_type_index
             )
 
-            start_time_str = st.text_input("Start Time (e.g. 615 or 1815)")
+            start_time_str = st.text_input(
+                "Start Time (e.g. 615 or 1815)",
+                value=st.session_state.last_end_time            
+            )
             end_time_str = st.text_input("End Time (e.g. 700 or 1900)")
 
         submitted = st.form_submit_button("Save Entry")
@@ -143,6 +149,8 @@ with tab1:
                         end_time=end_time.strftime("%H:%M"),
                         duration_minutes=duration_minutes,
                     )
+
+                    st.session_state.last_end_time = end_time.strftime("%H%M")
 
                     # keep latest selection for convenience
                     st.session_state.selected_activity_name = activity_name.strip()
