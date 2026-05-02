@@ -1,14 +1,11 @@
-import sqlite3
 import json
-from pathlib import Path
-
-DB_PATH = Path("activity_tracker.db")
+import psycopg2
+import psycopg2.extras
+import streamlit as st
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
 
 
 def init_db():
@@ -18,8 +15,8 @@ def init_db():
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS entries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            entry_date TEXT NOT NULL,
+            id BIGSERIAL PRIMARY KEY,
+            entry_date DATE NOT NULL,
             activity_name TEXT NOT NULL,
             activity_type TEXT NOT NULL,
             start_time TEXT NOT NULL,
@@ -30,6 +27,7 @@ def init_db():
     )
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
@@ -42,37 +40,39 @@ def add_entry(entry_date, activity_name, activity_type, start_time, end_time, du
         INSERT INTO entries (
             entry_date, activity_name, activity_type, start_time, end_time, duration_minutes
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
         (entry_date, activity_name, activity_type, start_time, end_time, duration_minutes),
     )
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
 def get_entries_by_date(entry_date):
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cur.execute(
         """
         SELECT *
         FROM entries
-        WHERE entry_date = ?
+        WHERE entry_date = %s
         ORDER BY start_time
         """,
         (entry_date,),
     )
 
     rows = cur.fetchall()
+    cur.close()
     conn.close()
     return rows
 
 
 def get_all_entries():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cur.execute(
         """
@@ -83,6 +83,7 @@ def get_all_entries():
     )
 
     rows = cur.fetchall()
+    cur.close()
     conn.close()
     return rows
 
@@ -91,35 +92,54 @@ def delete_entry(entry_id):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("DELETE FROM entries WHERE id = ?", (entry_id,))
+    cur.execute("DELETE FROM entries WHERE id = %s", (entry_id,))
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
 def get_recent_activities(limit=10):
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cur.execute(
         """
-        SELECT activity_name, activity_type, MAX(entry_date || ' ' || start_time) AS last_used
+        SELECT activity_name, activity_type, MAX(entry_date::text || ' ' || start_time) AS last_used
         FROM entries
         GROUP BY activity_name, activity_type
         ORDER BY last_used DESC
-        LIMIT ?
+        LIMIT %s
         """,
         (limit,),
     )
 
     rows = cur.fetchall()
+    cur.close()
     conn.close()
     return rows
 
 
-# ----------------------------
-# CURRENT NOTES BOARD
-# ----------------------------
+def get_latest_entry_by_date(entry_date):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute(
+        """
+        SELECT *
+        FROM entries
+        WHERE entry_date = %s
+        ORDER BY end_time DESC
+        LIMIT 1
+        """,
+        (entry_date,),
+    )
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
 
 def init_notes_table():
     conn = get_connection()
@@ -136,23 +156,25 @@ def init_notes_table():
 
     cur.execute(
         """
-        INSERT OR IGNORE INTO current_notes (id, notes_json)
+        INSERT INTO current_notes (id, notes_json)
         VALUES (1, '[]')
+        ON CONFLICT (id) DO NOTHING
         """
     )
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
 def get_notes():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    cur.execute(
-        "SELECT notes_json FROM current_notes WHERE id = 1"
-    )
+    cur.execute("SELECT notes_json FROM current_notes WHERE id = 1")
     row = cur.fetchone()
+
+    cur.close()
     conn.close()
 
     if not row:
@@ -171,31 +193,12 @@ def save_notes(notes_list):
     cur.execute(
         """
         UPDATE current_notes
-        SET notes_json = ?
+        SET notes_json = %s
         WHERE id = 1
         """,
-        (json.dumps(notes_list),)
+        (json.dumps(notes_list),),
     )
 
     conn.commit()
+    cur.close()
     conn.close()
-
-
-def get_latest_entry_by_date(entry_date):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT *
-        FROM entries
-        WHERE entry_date = ?
-        ORDER BY end_time DESC
-        LIMIT 1
-        """,
-        (entry_date,),
-    )
-
-    row = cur.fetchone()
-    conn.close()
-    return row
