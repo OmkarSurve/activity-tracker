@@ -117,26 +117,6 @@ def get_recent_activities(limit=10):
     return rows
 
 
-def get_latest_entry_by_date(entry_date):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT *
-        FROM entries
-        WHERE entry_date = ?
-        ORDER BY end_time DESC
-        LIMIT 1
-        """,
-        (entry_date,),
-    )
-
-    row = cur.fetchone()
-    conn.close()
-    return row
-
-
 # ----------------------------
 # CURRENT NOTES BOARD
 # ----------------------------
@@ -199,3 +179,23 @@ def save_notes(notes_list):
 
     conn.commit()
     conn.close()
+
+
+def get_latest_entry_by_date(entry_date):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT *
+        FROM entries
+        WHERE entry_date = ?
+        ORDER BY end_time DESC
+        LIMIT 1
+        """,
+        (entry_date,),
+    )
+
+    row = cur.fetchone()
+    conn.close()
+    return row
