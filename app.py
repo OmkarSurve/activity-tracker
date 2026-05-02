@@ -10,6 +10,7 @@ from db import (
     get_all_entries,
     delete_entry,
     get_recent_activities,
+    get_latest_entry_by_date,
     init_notes_table,
     get_notes,
     save_notes,
@@ -79,6 +80,12 @@ with tab1:
     st.subheader("Quick Logging")
 
     recent_rows = get_recent_activities(limit=10)
+    latest_entry = get_latest_entry_by_date(date.today().isoformat())
+
+    default_start_time = ""
+
+    if latest_entry:
+        default_start_time = latest_entry["end_time"].replace(":", "")
 
     if recent_rows:
         recent_options = ["-- Select a recent activity --"] + [
@@ -123,7 +130,7 @@ with tab1:
 
             start_time_str = st.text_input(
                 "Start Time (e.g. 615 or 1815)",
-                value=st.session_state.last_end_time            
+                value=default_start_time            
             )
             end_time_str = st.text_input("End Time (e.g. 700 or 1900)")
 
@@ -149,8 +156,6 @@ with tab1:
                         end_time=end_time.strftime("%H:%M"),
                         duration_minutes=duration_minutes,
                     )
-
-                    st.session_state.last_end_time = end_time.strftime("%H%M")
 
                     # keep latest selection for convenience
                     st.session_state.selected_activity_name = activity_name.strip()
