@@ -39,6 +39,7 @@ ACTIVITY_TYPES = [
     "Relax",
     "Time Waster",
     "Work",
+    "Productive Block"
 ]
 
 st.title("Activity Tracker")
