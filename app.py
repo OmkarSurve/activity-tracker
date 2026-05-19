@@ -2,6 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, date, time
+from zoneinfo import ZoneInfo
+
+TORONTO_TZ = ZoneInfo("America/Toronto")
+
+today_date = datetime.now(TORONTO_TZ).date()
 
 from db import (
     init_db,
@@ -48,8 +53,8 @@ tab1, tab2, tab3 = st.tabs(["Log Entry", "Reports", "Notes"])
 
 
 def calculate_duration_minutes(start_t: time, end_t: time) -> int:
-    start_dt = datetime.combine(date.today(), start_t)
-    end_dt = datetime.combine(date.today(), end_t)
+    start_dt = datetime.combine(today_date, start_t)
+    end_dt = datetime.combine(today_date, end_t)
 
     if end_dt <= start_dt:
         raise ValueError("End time must be after start time.")
@@ -81,7 +86,7 @@ with tab1:
     st.subheader("Quick Logging")
 
     recent_rows = get_recent_activities(limit=10)
-    latest_entry = get_latest_entry_by_date(date.today().isoformat())
+    latest_entry = get_latest_entry_by_date(today_date.isoformat())
 
     default_start_time = ""
 
@@ -112,7 +117,7 @@ with tab1:
         col1, col2 = st.columns(2)
 
         with col1:
-            entry_date = st.date_input("Date", value=date.today())
+            entry_date = st.date_input("Date", value=today_date)
             activity_name = st.text_input(
                 "Activity Name",
                 value=st.session_state.selected_activity_name,
@@ -171,7 +176,7 @@ with tab1:
     st.divider()
     st.subheader("Today's Entries")
 
-    today_rows = get_entries_by_date(date.today().isoformat())
+    today_rows = get_entries_by_date(today_date.isoformat())
 
     if today_rows:
         today_df = pd.DataFrame([dict(row) for row in today_rows])
