@@ -19,6 +19,10 @@ from db import (
     init_notes_table,
     get_notes,
     save_notes,
+    get_back_on_track,
+    save_back_on_track,
+    get_anchors,
+    save_anchors
 )
 
 st.set_page_config(page_title="Activity Tracker", layout="wide")
@@ -49,7 +53,7 @@ ACTIVITY_TYPES = [
 
 st.title("Activity Tracker")
 
-tab1, tab2, tab3 = st.tabs(["Log Entry", "Reports", "Notes"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Log Entry", "Reports", "Notes", "Back on Track", "Anchors"])
 
 
 def calculate_duration_minutes(start_t: time, end_t: time) -> int:
@@ -392,3 +396,78 @@ with tab3:
                     st.rerun()
     else:
         st.info("No notes yet.")
+
+
+with tab4:
+    st.subheader("Back on Track")
+
+    current_track = get_back_on_track()
+
+    new_track = st.text_input("Add a track")
+
+    if st.button("Add Track"):
+        if not new_track.strip():
+            st.error("Track cannot be empty.")
+        else:
+            current_track.append(new_track.strip())
+            save_back_on_track(current_track)
+            st.success("Track added.")
+            st.rerun()
+
+    st.divider()
+
+    if current_track:
+        st.markdown("### Current Track")
+
+        for idx, track in enumerate(current_track):
+            col1, col2 = st.columns([8, 1])
+
+            with col1:
+                st.write(f"{idx + 1}. {track}")
+
+            with col2:
+                if st.button("Remove", key=f"remove_track_{idx}"):
+                    updated_track = current_track.copy()
+                    updated_track.pop(idx)
+                    save_back_on_track(updated_track)
+                    st.rerun()
+    else:
+        st.info("No track yet.")
+
+
+with tab5:
+    st.subheader("Anchors")
+
+    current_anchors = get_anchors()
+
+    new_anchor = st.text_input("Add a anchor")
+
+    if st.button("Add Anchor"):
+        if not new_anchor.strip():
+            st.error("Anchor cannot be empty.")
+        else:
+            current_anchors.append(new_anchor.strip())
+            save_anchors(current_anchors)
+            st.success("Anchor added.")
+            st.rerun()
+
+    st.divider()
+
+    if current_anchors:
+        st.markdown("### Current Anchors")
+
+        for idx, anchor in enumerate(current_anchors):
+            col1, col2 = st.columns([8, 1])
+
+            with col1:
+                st.write(f"{idx + 1}. {anchor}")
+
+            with col2:
+                if st.button("Remove", key=f"remove_anchor_{idx}"):
+                    updated_anchors = current_anchors.copy()
+                    updated_anchors.pop(idx)
+                    save_anchors(updated_anchors)
+                    st.rerun()
+    else:
+        st.info("No anchors yet.")
+
