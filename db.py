@@ -199,6 +199,80 @@ def save_notes(notes_list):
         (json.dumps(notes_list),),
     )
 
+
+def get_back_on_track():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute(
+        "SELECT items_json FROM current_back_on_track WHERE id = 1"
+    )
+
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not row:
+        return []
+
+    return json.loads(row["items_json"])
+
+
+def save_back_on_track(items):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        UPDATE current_back_on_track
+        SET items_json = %s
+        WHERE id = 1
+        """,
+        (json.dumps(items),),
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_anchors():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute(
+        "SELECT items_json FROM current_anchors WHERE id = 1"
+    )
+
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not row:
+        return []
+
+    return json.loads(row["items_json"])
+
+
+def save_anchors(items):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        UPDATE current_anchors
+        SET items_json = %s
+        WHERE id = 1
+        """,
+        (json.dumps(items),),
+    )
+
     conn.commit()
     cur.close()
     conn.close()
