@@ -236,10 +236,6 @@ def save_back_on_track(items):
     cur.close()
     conn.close()
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
 
 def get_anchors():
     conn = get_connection()
