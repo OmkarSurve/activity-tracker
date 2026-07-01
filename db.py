@@ -232,10 +232,6 @@ def save_back_on_track(items):
         (json.dumps(items),),
     )
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
 
 def get_anchors():
     conn = get_connection()
