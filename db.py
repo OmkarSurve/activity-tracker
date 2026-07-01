@@ -199,6 +199,10 @@ def save_notes(notes_list):
         (json.dumps(notes_list),),
     )
 
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 def get_back_on_track():
     conn = get_connection()
@@ -231,6 +235,10 @@ def save_back_on_track(items):
         """,
         (json.dumps(items),),
     )
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def get_anchors():
