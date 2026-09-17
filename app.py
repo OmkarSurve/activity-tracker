@@ -22,7 +22,10 @@ from db import (
     get_back_on_track,
     save_back_on_track,
     get_anchors,
-    save_anchors
+    save_anchors,
+    add_accomplishment,
+    get_accomplishments_by_date,
+    delete_accomplishment
 )
 
 st.set_page_config(page_title="Activity Tracker", layout="wide")
@@ -53,7 +56,7 @@ ACTIVITY_TYPES = [
 
 st.title("Activity Tracker")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Log Entry", "Reports", "Notes", "Back on Track", "Anchors"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Log Entry", "Reports", "Accomplishments", "Notes", "Back on Track", "Anchors"])
 
 
 def calculate_duration_minutes(start_t: time, end_t: time) -> int:
@@ -362,6 +365,59 @@ with tab2:
 
 
 with tab3:
+    st.subheader("Accomplishments")
+
+    accomplishment_date = st.date_input(
+        "Date",
+        value=today_date,
+        key="accomplishment_date"
+    )
+
+    new_accomplishment = st.text_input(
+        "What did you accomplish?",
+        key="new_accomplishment"
+    )
+
+    if st.button("Add", key="add_accomplishment_button"):
+        if not new_accomplishment.strip():
+            st.error("Please enter an accomplishment.")
+        else:
+            add_accomplishment(
+                accomplishment_date.isoformat(),
+                new_accomplishment.strip()
+            )
+            st.rerun()
+
+    accomplishments = get_accomplishments_by_date(
+        accomplishment_date.isoformat()
+    )
+
+    st.divider()
+
+    if accomplishments:
+        st.markdown(
+            f"### {len(accomplishments)} things accomplished"
+        )
+
+        for item in accomplishments:
+            col1, col2 = st.columns([8, 1])
+
+            with col1:
+                st.write(f"✓ {item['accomplishment']}")
+
+            with col2:
+                if st.button(
+                    "Remove",
+                    key=f"remove_accomplishment_{item['id']}"
+                ):
+                    delete_accomplishment(item["id"])
+                    st.rerun()
+
+    else:
+        st.info("No accomplishments recorded for this day.")
+
+
+with tab4:
     st.subheader("Notes")
 
     current_notes = get_notes()
@@ -398,7 +454,7 @@ with tab3:
         st.info("No notes yet.")
 
 
-with tab4:
+with tab5:
     st.subheader("Back on Track")
 
     current_track = get_back_on_track()
@@ -435,7 +491,7 @@ with tab4:
         st.info("No track yet.")
 
 
-with tab5:
+with tab6:
     st.subheader("Anchors")
 
     current_anchors = get_anchors()
