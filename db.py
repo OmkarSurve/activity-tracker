@@ -332,3 +332,29 @@ def delete_accomplishment(accomplishment_id):
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_accomplishment_counts_by_month(year, month):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute(
+        """
+        SELECT
+            entry_date,
+            COUNT(*) AS accomplishment_count
+        FROM accomplishments
+        WHERE EXTRACT(YEAR FROM entry_date) = %s
+          AND EXTRACT(MONTH FROM entry_date) = %s
+        GROUP BY entry_date
+        ORDER BY entry_date
+        """,
+        (year, month),
+    )
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows
