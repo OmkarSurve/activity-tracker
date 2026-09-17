@@ -276,3 +276,59 @@ def save_anchors(items):
     conn.commit()
     cur.close()
     conn.close()
+
+
+def add_accomplishment(entry_date, accomplishment):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO accomplishments (entry_date, accomplishment)
+        VALUES (%s, %s)
+        """,
+        (entry_date, accomplishment),
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_accomplishments_by_date(entry_date):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute(
+        """
+        SELECT id, entry_date, accomplishment
+        FROM accomplishments
+        WHERE entry_date = %s
+        ORDER BY id ASC
+        """,
+        (entry_date,),
+    )
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows
+
+
+def delete_accomplishment(accomplishment_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        DELETE FROM accomplishments
+        WHERE id = %s
+        """,
+        (accomplishment_id,),
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
