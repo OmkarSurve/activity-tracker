@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, date, time
 from zoneinfo import ZoneInfo
+import calendar
 
 TORONTO_TZ = ZoneInfo("America/Toronto")
 
@@ -25,7 +26,8 @@ from db import (
     save_anchors,
     add_accomplishment,
     get_accomplishments_by_date,
-    delete_accomplishment
+    delete_accomplishment,
+    get_accomplishment_counts_by_month
 )
 
 st.set_page_config(page_title="Activity Tracker", layout="wide")
@@ -56,7 +58,7 @@ ACTIVITY_TYPES = [
 
 st.title("Activity Tracker")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Log Entry", "Reports", "Accomplishments", "Notes", "Back on Track", "Anchors"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Log Entry", "Reports", "Accomplishments", "Calendar", "Notes", "Back on Track", "Anchors"])
 
 
 def calculate_duration_minutes(start_t: time, end_t: time) -> int:
@@ -418,6 +420,118 @@ with tab3:
 
 
 with tab4:
+    st.subheader("Accomplishment Calendar")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_month = st.selectbox(
+            "Month",
+            range(1, 13),
+            index=today_date.month - 1,
+            format_func=lambda x: calendar.month_name[x],
+            key="calendar_month",
+        )
+
+    with col2:
+        selected_year = st.selectbox(
+            "Year",
+            range(today_date.year - 5, today_date.year + 1),
+            index=5,
+            key="calendar_year",
+        )
+
+    monthly_counts = get_accomplishment_counts_by_month(
+        selected_year,
+        selected_month
+    )
+
+    count_lookup = {
+        row["entry_date"].day: row["accomplishment_count"]
+        for row in monthly_counts
+    }
+
+    st.markdown(
+        f"### {calendar.month_name[selected_month]} {selected_year}"
+    )
+
+    cal = calendar.Calendar(firstweekday=0)
+    month_weeks = cal.monthdayscalendar(
+        selected_year,
+        selected_month
+    )
+
+    # Weekday headings
+    weekday_cols = st.columns(7)
+
+    for col, day_name in zip(
+        weekday_cols,
+        ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    ):
+        col.markdown(f"**{day_name}**")
+
+    # Calendar rows
+    for week in month_weeks:
+        cols = st.columns(7)
+
+        for col, day in zip(cols, week):
+
+            if day == 0:
+                col.write("")
+                continue
+
+            count = count_lookup.get(day, 0)
+
+            if count > 0:
+                button_label = f"{day}\n\n✓ {count}"
+            else:
+                button_label = str(day)
+
+            if col.button(
+                button_label,
+                key=f"calendar_day_{selected_year}_{selected_month}_{day}",
+                use_container_width=True,
+            ):
+                st.session_state.selected_calendar_date = date(
+                    selected_year,
+                    selected_month,
+                    day
+                )
+
+    # Show selected day's accomplishments
+    if "selected_calendar_date" in st.session_state:
+
+        selected_date = st.session_state.selected_calendar_date
+
+        # Only display it if it belongs to currently displayed month
+        if (
+            selected_date.year == selected_year
+            and selected_date.month == selected_month
+        ):
+            st.divider()
+
+            st.markdown(
+                f"### {selected_date.strftime('%B %d, %Y')}"
+            )
+
+            day_accomplishments = get_accomplishments_by_date(
+                selected_date.isoformat()
+            )
+
+            if day_accomplishments:
+
+                for item in day_accomplishments:
+                    st.write(f"✓ {item['accomplishment']}")
+
+                st.caption(
+                    f"{len(day_accomplishments)} things accomplished"
+                )
+
+            else:
+                st.info("No accomplishments recorded for this day.")
+
+
+with tab5:
     st.subheader("Notes")
 
     current_notes = get_notes()
@@ -454,7 +568,7 @@ with tab4:
         st.info("No notes yet.")
 
 
-with tab5:
+with tab6:
     st.subheader("Back on Track")
 
     current_track = get_back_on_track()
@@ -491,7 +605,7 @@ with tab5:
         st.info("No track yet.")
 
 
-with tab6:
+with tab7:
     st.subheader("Anchors")
 
     current_anchors = get_anchors()
